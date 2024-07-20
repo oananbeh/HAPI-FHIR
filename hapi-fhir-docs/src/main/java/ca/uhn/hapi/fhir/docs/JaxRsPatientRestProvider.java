@@ -1,0 +1,107 @@
+/*-
+ * #%L
+ * HAPI FHIR - Docs
+ * %%
+ * Copyright (C) 2014 - 2024 Smile CDR, Inc.
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
+package ca.uhn.hapi.fhir.docs;
+
+import ca.uhn.fhir.jaxrs.server.AbstractJaxRsResourceProvider;
+import ca.uhn.fhir.model.primitive.StringDt;
+import ca.uhn.fhir.rest.annotation.ConditionalUrlParam;
+import ca.uhn.fhir.rest.annotation.Create;
+import ca.uhn.fhir.rest.annotation.IdParam;
+import ca.uhn.fhir.rest.annotation.Operation;
+import ca.uhn.fhir.rest.annotation.OperationParam;
+import ca.uhn.fhir.rest.annotation.ResourceParam;
+import ca.uhn.fhir.rest.api.Constants;
+import ca.uhn.fhir.rest.api.MethodOutcome;
+import ca.uhn.fhir.rest.api.RequestTypeEnum;
+import ca.uhn.fhir.rest.api.RestOperationTypeEnum;
+import jakarta.ejb.Local;
+import jakarta.ejb.Stateless;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import org.hl7.fhir.r4.model.IdType;
+import org.hl7.fhir.r4.model.Parameters;
+import org.hl7.fhir.r4.model.Patient;
+import org.hl7.fhir.r4.model.StringType;
+
+/**
+ * A demo JaxRs Patient Rest Provider
+ */
+@Local
+@Stateless
+// START SNIPPET: jax-rs-provider-construction
+@Path("/Patient")
+@Produces({MediaType.APPLICATION_JSON, Constants.CT_FHIR_JSON, Constants.CT_FHIR_XML})
+public class JaxRsPatientRestProvider extends AbstractJaxRsResourceProvider<Patient> {
+
+	public JaxRsPatientRestProvider() {
+		super(JaxRsPatientRestProvider.class);
+	}
+	// END SNIPPET: jax-rs-provider-construction
+
+	@Override
+	public Class<Patient> getResourceType() {
+		return Patient.class;
+	}
+
+	@Create
+	public MethodOutcome create(@ResourceParam final Patient patient, @ConditionalUrlParam String theConditional) {
+		// create the patient ...
+		return new MethodOutcome(new IdType(1L)).setCreated(true);
+	}
+
+	// START SNIPPET: jax-rs-provider-operation
+	@GET
+	@Path("/{id}/$someCustomOperation")
+	public Response someCustomOperationUsingGet(@PathParam("id") String id, String resource) throws Exception {
+		return customOperation(
+				resource,
+				RequestTypeEnum.GET,
+				id,
+				"$someCustomOperation",
+				RestOperationTypeEnum.EXTENDED_OPERATION_INSTANCE);
+	}
+
+	@Operation(
+			name = "someCustomOperation",
+			idempotent = true,
+			returnParameters = {@OperationParam(name = "return", type = StringDt.class)})
+	public Parameters someCustomOperation(@IdParam IdType myId, @OperationParam(name = "dummy") StringDt dummyInput) {
+		Parameters parameters = new Parameters();
+		parameters.addParameter().setName("return").setValue(new StringType("My Dummy Result"));
+		return parameters;
+	}
+	// END SNIPPET: jax-rs-provider-operation
+
+	@POST
+	@Path("/{id}/$someCustomOperation")
+	public Response someCustomOperationUsingPost(@PathParam("id") String id, String resource) throws Exception {
+		return customOperation(
+				resource,
+				RequestTypeEnum.POST,
+				id,
+				"$someCustomOperation",
+				RestOperationTypeEnum.EXTENDED_OPERATION_INSTANCE);
+	}
+}
